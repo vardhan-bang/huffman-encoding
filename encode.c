@@ -15,7 +15,7 @@ typedef struct Byte {
     struct Byte *right;
 } Byte;
 
-void print_bytes(Byte *array[], size_t size);
+void print_bytes(Byte *array[], int from, int to);
 int compare_bytes(const void *b1, const void *b2);
 void insert_byte(Byte *byte, Byte *array[], size_t size,int pos);
 
@@ -75,14 +75,27 @@ int main(int argc, char *argv[]) {
     for(int i = 0; i < TREE_SIZE; i++) {
         if(tree[i]->freq > 0) {
             first_non_zero = i;
+            break;
         }
     }
 
-    for(int i = first_non_zero; i < TREE_SIZE; i++) {
+    // Byte x = {
+    //     .data = "abc",
+    //     .data_size = 3,
+    //     .code = "101",
+    //     .code_size = 3,
+    //     .freq = 69,
+    //     .left = NULL,
+    //     .right = NULL
+    // };
+
+    // insert_byte(&x, tree, TREE_SIZE, first_non_zero + 2);
+
+    for(int i = first_non_zero; i < TREE_SIZE; i+=2) {
         //read 2 bytes
         Byte *b1, *b2;
-        b1 = tree[i*2];
-        b2 = tree[i*2 + 1];
+        b1 = tree[i];
+        b2 = tree[i+1];
         //check if not null
         if(b1->data == NULL || b2->data == NULL) {
             break;
@@ -113,8 +126,8 @@ int main(int argc, char *argv[]) {
         Byte *parent = malloc(sizeof(Byte));
         parent->data_size = b1->data_size + b2->data_size;
         parent->data = malloc(parent->data_size);
-        memcpy(parent->data, b1->data, b1->data_size);
-        memcpy(parent->data + b1->data_size, b2->data, b2->data_size);
+        memmove(parent->data, b1->data, b1->data_size);
+        memmove(parent->data + b1->data_size, b2->data, b2->data_size);
         parent->code = malloc(0);
         parent->code_size = 0;
         parent->freq = b1->freq + b2->freq;
@@ -123,7 +136,7 @@ int main(int argc, char *argv[]) {
 
         //insert parent into tree
         int pos;
-        for(int i = 0; i < TREE_SIZE; i++) {
+        for(int i = 0; i < TREE_SIZE-1; i++) {
             if(parent->freq > tree[i]->freq) {
                 pos = i;
                 break;
@@ -132,24 +145,24 @@ int main(int argc, char *argv[]) {
         insert_byte(parent, tree, TREE_SIZE, pos);
     }
 
-    print_bytes(tree, TREE_SIZE);
+    print_bytes(tree, first_non_zero, TREE_SIZE);
     
     // printf("%zu\n", sizeof(sorted_bytes));
     return 0;
 }
 
-void print_bytes(Byte *array[], size_t size) {
-    for(int i = 0; i < size; i++) {
+void print_bytes(Byte *array[], int from, int to) {
+    for(int i = from; i < to; i++) {
         Byte *temp = array[i]; 
-        printf("data: ");
+        printf("%d. data: ", i);
         for(int j = 0; j < temp->data_size; j++) {
-            printf("%02x ", temp->data[i]);
+            printf("%02x ", (unsigned char)temp->data[j]);
         }
         printf("code: ");
         for(int j = 0; j < temp->code_size; j++) {
-            printf("%x", temp->code[i]);
+            printf("%x", (char)temp->code[j]);
         }
-        printf("freq: %d", temp->freq);
+        printf(" freq: %d\n", temp->freq);
     }
 }
 
@@ -169,6 +182,6 @@ void insert_byte(Byte *byte, Byte *array[], size_t size, int pos) {
     // for(int i = size - 1; i > pos; i--) {
     //     array[i] = array[i-1];
     // }
-    memmove(array + pos + 1, array + pos, size - pos - 1);
+    memmove(&(array[pos + 1]), &(array[pos]) , (size - pos - 1)*sizeof(Byte*));
     array[pos] = byte;
 }
