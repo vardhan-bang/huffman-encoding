@@ -18,6 +18,8 @@ typedef struct Byte {
 void print_bytes(Byte *array[], int from, int to);
 int compare_bytes(const void *b1, const void *b2);
 void insert_byte(Byte *byte, Byte *array[], size_t size,int pos);
+void update_children_code(Byte* parent, int val);
+
 
 int main(int argc, char *argv[]) {
     // initialize bytes 
@@ -91,7 +93,7 @@ int main(int argc, char *argv[]) {
 
     // insert_byte(&x, tree, TREE_SIZE, first_non_zero + 2);
 
-    for(int i = first_non_zero; i < TREE_SIZE; i+=2) {
+    for(int i = first_non_zero; i < TREE_SIZE -1 ; i+=2) {
         //read 2 bytes
         Byte *b1, *b2;
         b1 = tree[i];
@@ -105,22 +107,14 @@ int main(int argc, char *argv[]) {
         b2->code_size += 1;
         b1->code = malloc(b1->code_size);
         b2->code = malloc(b2->code_size);
-        memset(b1->code + b1->code_size - 1, 0, 1);
-        memset(b2->code + b2->code_size - 1, 1, 1);
+        memcpy(b1->code+1, b1->code, b1->code_size - 1);
+        memset(b1->code, 0, 1);
+        memcpy(b2->code+1, b2->code, b2->code_size - 1);
+        memset(b2->code, 1, 1);
         
         //check for children and append to their code
-        if(b1->left != NULL) {
-            Byte *left = b1->left; 
-            left->code_size += 1;
-            realloc(left->code, left->code_size);
-            memset(left->code + left->code_size - 1, 0, 1);
-        }
-        if(b1->right != NULL) {
-            Byte *right = b1->right; 
-            right->code_size += 1;
-            realloc(right->code, right->code_size);
-            memset(right->code + right->code_size - 1, 1, 1);
-        }
+        update_children_code(b1, 0);
+        update_children_code(b2, 1);
 
         //combine b1 and b2 into parent
         Byte *parent = malloc(sizeof(Byte));
@@ -136,12 +130,13 @@ int main(int argc, char *argv[]) {
 
         //insert parent into tree
         int pos;
-        for(int i = 0; i < TREE_SIZE-1; i++) {
-            if(parent->freq > tree[i]->freq) {
+        for(int i = first_non_zero; i < TREE_SIZE; i++) {
+            if(parent->freq < tree[i]->freq) {
                 pos = i;
                 break;
             }
         }
+        // printf("%d\n", pos);
         insert_byte(parent, tree, TREE_SIZE, pos);
     }
 
@@ -184,4 +179,27 @@ void insert_byte(Byte *byte, Byte *array[], size_t size, int pos) {
     // }
     memmove(&(array[pos + 1]), &(array[pos]) , (size - pos - 1)*sizeof(Byte*));
     array[pos] = byte;
+}
+
+void update_children_code(Byte* parent, int val) {
+    if(parent->left == NULL && parent->right ==  NULL) {
+        return;
+    } else {
+        if(parent->left != NULL) {
+            Byte *left = parent->left;
+            left->code_size += 1;
+            realloc(left->code, left->code_size);
+            memmove(left->code + 1, left->code, left->code_size-1);
+            memset(left->code, val, 1);
+            update_children_code(left, val);
+        }
+        if(parent->right != NULL) {
+            Byte *right = parent->right;
+            right->code_size += 1;
+            realloc(right->code, right->code_size);
+            memmove(right->code + 1, right->code, right->code_size-1);
+            memset(right->code, val, 1);
+            update_children_code(right, val);
+        }        
+    }
 }
