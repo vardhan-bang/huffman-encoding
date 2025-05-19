@@ -7,9 +7,10 @@
 
 typedef struct Byte {
     char* data;
-    unsigned int freq;
+    int data_size;
     char *code;
     unsigned int code_size;
+    unsigned int freq;
     struct Byte *left;
     struct Byte *right;
 } Byte;
@@ -19,14 +20,15 @@ int compare_bytes(const void *b1, const void *b2);
 void insert_byte(Byte *byte, Byte *array[], size_t size,int pos);
 
 int main(int argc, char *argv[]) {
-    // initialize bytes
+    // initialize bytes 
     Byte bytes[NUM_BYTES];
     for(unsigned int i = 0; i < NUM_BYTES; i++) {
         bytes[i].data = malloc(1);
         memset(bytes[i].data, (char) i, 1);
-        bytes[i].freq = 0;
-        bytes[i].code = "";
+        bytes[i].data_size = 1;
+        bytes[i].code = malloc(0);
         bytes[i].code_size = 0;
+        bytes[i].freq = 0;
         bytes[i].left = NULL;
         bytes[i].right = NULL;
     }
@@ -58,8 +60,9 @@ int main(int argc, char *argv[]) {
     memcpy(tree, sorted_bytes, NUM_BYTES*sizeof(Byte*));
     for(int i = NUM_BYTES; i < TREE_SIZE; i++) {
         tree[i] = malloc(sizeof(Byte));
-        tree[i]->data = NULL;
-        tree[i]->code = NULL;
+        tree[i]->data = malloc(0);
+        tree[i]->data_size = 0;
+        tree[i]->code = malloc(0);
         tree[i]->code_size = 0;
         tree[i]->freq = 0;
         tree[i]->left = NULL;
@@ -67,8 +70,15 @@ int main(int argc, char *argv[]) {
     } 
     // print_bytes(sorted_bytes, NUM_BYTES);
     // print_bytes(tree, TREE_SIZE); 
+    
+    int first_non_zero;
+    for(int i = 0; i < TREE_SIZE; i++) {
+        if(tree[i]->freq > 0) {
+            first_non_zero = i;
+        }
+    }
 
-    for(int i = 0; i < TREE_SIZE/2; i++) {
+    for(int i = first_non_zero; i < TREE_SIZE; i++) {
         //read 2 bytes
         Byte *b1, *b2;
         b1 = tree[i*2];
@@ -77,8 +87,52 @@ int main(int argc, char *argv[]) {
         if(b1->data == NULL || b2->data == NULL) {
             break;
         }
+        //append to code
+        b1->code_size += 1;
+        b2->code_size += 1;
+        b1->code = malloc(b1->code_size);
+        b2->code = malloc(b2->code_size);
+        memset(b1->code + b1->code_size - 1, 0, 1);
+        memset(b2->code + b2->code_size - 1, 1, 1);
+        
+        //check for children and append to their code
+        if(b1->left != NULL) {
+            Byte *left = b1->left; 
+            left->code_size += 1;
+            realloc(left->code, left->code_size);
+            memset(left->code + left->code_size - 1, 0, 1);
+        }
+        if(b1->right != NULL) {
+            Byte *right = b1->right; 
+            right->code_size += 1;
+            realloc(right->code, right->code_size);
+            memset(right->code + right->code_size - 1, 1, 1);
+        }
 
+        //combine b1 and b2 into parent
+        Byte *parent = malloc(sizeof(Byte));
+        parent->data_size = b1->data_size + b2->data_size;
+        parent->data = malloc(parent->data_size);
+        memcpy(parent->data, b1->data, b1->data_size);
+        memcpy(parent->data + b1->data_size, b2->data, b2->data_size);
+        parent->code = malloc(0);
+        parent->code_size = 0;
+        parent->freq = b1->freq + b2->freq;
+        parent->left = b1;
+        parent->right = b2;
+
+        //insert parent into tree
+        int pos;
+        for(int i = 0; i < TREE_SIZE; i++) {
+            if(parent->freq > tree[i]->freq) {
+                pos = i;
+                break;
+            }
+        }
+        insert_byte(parent, tree, TREE_SIZE, pos);
     }
+
+    print_bytes(tree, TREE_SIZE);
     
     // printf("%zu\n", sizeof(sorted_bytes));
     return 0;
@@ -87,7 +141,15 @@ int main(int argc, char *argv[]) {
 void print_bytes(Byte *array[], size_t size) {
     for(int i = 0; i < size; i++) {
         Byte *temp = array[i]; 
-        printf("%02X: %u\n", *(temp->data), temp->freq);
+        printf("data: ");
+        for(int j = 0; j < temp->data_size; j++) {
+            printf("%02x ", temp->data[i]);
+        }
+        printf("code: ");
+        for(int j = 0; j < temp->code_size; j++) {
+            printf("%x", temp->code[i]);
+        }
+        printf("freq: %d", temp->freq);
     }
 }
 

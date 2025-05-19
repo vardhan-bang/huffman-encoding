@@ -4,4 +4,7 @@ test: encode
 	./encode input.ppm
 
 encode: encode.c
-	gcc -o encode encode.c
+	gcc -g -o encode encode.c
+
+clean:
+	rm encode
