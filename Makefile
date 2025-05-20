@@ -1,7 +1,7 @@
 all: encode
 
 test: encode
-	./encode input.ppm
+	./encode file
 
 encode: encode.c
 	gcc -g -o encode encode.c

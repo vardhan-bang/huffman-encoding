@@ -53,7 +53,6 @@ int main(int argc, char *argv[]) {
         sorted_bytes[i] = bytes + i;
     }
     qsort(sorted_bytes, NUM_BYTES, sizeof(Byte*), compare_bytes);
-    // print_bytes(sorted_bytes, NUM_BYTES);
 
     // big array to build tree
     // first 256 are sorted_bytes
@@ -69,9 +68,7 @@ int main(int argc, char *argv[]) {
         tree[i]->freq = 0;
         tree[i]->left = NULL;
         tree[i]->right = NULL;
-    } 
-    // print_bytes(sorted_bytes, NUM_BYTES);
-    // print_bytes(tree, TREE_SIZE); 
+    }
     
     int first_non_zero;
     for(int i = 0; i < TREE_SIZE; i++) {
@@ -81,25 +78,13 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // Byte x = {
-    //     .data = "abc",
-    //     .data_size = 3,
-    //     .code = "101",
-    //     .code_size = 3,
-    //     .freq = 69,
-    //     .left = NULL,
-    //     .right = NULL
-    // };
-
-    // insert_byte(&x, tree, TREE_SIZE, first_non_zero + 2);
-
     for(int i = first_non_zero; i < TREE_SIZE -1 ; i+=2) {
         //read 2 bytes
         Byte *b1, *b2;
         b1 = tree[i];
         b2 = tree[i+1];
         //check if not null
-        if(b1->data == NULL || b2->data == NULL) {
+        if(b1->freq == 0 || b2->freq == 0) {
             break;
         }
         //append to code
@@ -130,14 +115,15 @@ int main(int argc, char *argv[]) {
 
         //insert parent into tree
         int pos;
-        for(int i = first_non_zero; i < TREE_SIZE; i++) {
-            if(parent->freq < tree[i]->freq) {
-                pos = i;
+        for(int j = i; j < TREE_SIZE; j++) {
+            if(parent->freq < tree[j]->freq || tree[j]->freq == 0) {
+                pos = j;
                 break;
             }
         }
         // printf("%d\n", pos);
         insert_byte(parent, tree, TREE_SIZE, pos);
+        printf("iter\n");
     }
 
     print_bytes(tree, first_non_zero, TREE_SIZE);
@@ -151,7 +137,7 @@ void print_bytes(Byte *array[], int from, int to) {
         Byte *temp = array[i]; 
         printf("%d. data: ", i);
         for(int j = 0; j < temp->data_size; j++) {
-            printf("%02x ", (unsigned char)temp->data[j]);
+            printf("%c ", (unsigned char)temp->data[j]);
         }
         printf("code: ");
         for(int j = 0; j < temp->code_size; j++) {
